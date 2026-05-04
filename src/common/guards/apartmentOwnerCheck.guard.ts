@@ -3,7 +3,8 @@ import {
   CanActivate, 
   ExecutionContext, 
   NotFoundException, 
-  ForbiddenException 
+  ForbiddenException, 
+  BadRequestException
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -25,9 +26,10 @@ export class IsApartmentOwnerGuard implements CanActivate {
         return true;
     }
 
-    const apartmentId = parseInt(request.params.id, 10); 
-    if (isNaN(apartmentId)) {
-      throw new NotFoundException('Incorrect ID');
+    const apartmentId = request.params.id;
+
+    if (!apartmentId) {
+      throw new BadRequestException('Apartment ID is missing in URL');
     }
 
     const apartment = await this.prisma.apartment.findUnique({

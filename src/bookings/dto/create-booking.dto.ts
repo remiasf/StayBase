@@ -1,15 +1,14 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { Booking, BookingStatus } from "@prisma/client";
 import { Type } from "class-transformer";
-import { IsDate, IsNotEmpty, IsNumber, IsPositive } from "class-validator";
+import { IsDate, IsNotEmpty, IsNumber, IsPositive, IsString } from "class-validator";
 
 export class CreateBookingDto {
     @ApiProperty({ 
         description: 'Apartment ID'
     })
     @IsNotEmpty()
-    @IsNumber()
-    @IsPositive()
+    @IsString()
     apartmentId!: string
 
     @ApiProperty({ 

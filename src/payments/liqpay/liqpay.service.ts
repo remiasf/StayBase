@@ -54,10 +54,10 @@ export class LiqPayService {
             result_url: dynamicResultUrl,
         }
         const jsonString = JSON.stringify(params);
-        const data = Buffer.from(jsonString).toString('base64');
+        const data = Buffer.from(jsonString, 'utf-8').toString('base64');
 
         const signString = this.privateKey + data + this.privateKey;
-        const signature = crypto.createHash('sha1').update(signString).digest('base64');
+        const signature = crypto.createHash('sha1').update(signString, 'utf-8').digest('base64');
 
         return {
             data,
