@@ -42,6 +42,12 @@ export class LiqPayService {
 
         const dynamicResultUrl = `${frontendUrl}/bookings/${bookingId}`
 
+        console.log('--- LIQPAY DEBUG ---');
+console.log('Public Key:', this.publicKey);
+console.log('Private Key length:', this.privateKey?.length); // Выводим длину, чтобы не светить сам ключ
+console.log('Amount:', bookingInfo.totalPrice);
+console.log('--------------------');
+
         const params = {
             public_key: this.publicKey,
             version: 3,
@@ -52,6 +58,7 @@ export class LiqPayService {
             order_id: newPayment.id,
             server_url: process.env.LIQPAY_WEBHOOK_URL,
             result_url: dynamicResultUrl,
+            sandbox: 1
         }
         const jsonString = JSON.stringify(params);
         const data = Buffer.from(jsonString, 'utf-8').toString('base64');
