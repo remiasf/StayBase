@@ -16,8 +16,21 @@ enum Role {
   SUPER_ADMIN 
 }
 
+enum BookingStatus {
+  PENDING
+  APPROVED
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {  
+  PENDING
+  SUCCESS
+  FAILED
+}
+
 model User {
-  id Int @id @default(autoincrement())
+  id String @id @default(uuid())
   name String
   login String @unique
   password String
@@ -31,41 +44,74 @@ model User {
 }
 
 model Apartment {
-  id Int @id @default(autoincrement())
+  id String @id @default(uuid())
   title String
-  discountPrice Int?
-  size Float
-  price Int
-  rooms Int
+  description String
+  images String[] @default([])
+  city String
+  address String
 
-  userId Int
+  price Int
+  discountPrice Int?
+
+  size Float
+  rooms Int
+  maxGuests Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+
+  userId String
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   
   bookings Booking[]
+
+  amenities Amenity[]
+}
+
+model Amenity {
+  id         Int         @id @default(autoincrement())
+  name       String      @unique
+  apartments Apartment[]
 }
 
 model Booking {
-  id Int @id @default(autoincrement())
-  createdAt DateTime @default(now())
-  startDate DateTime
-  endDate DateTime
-  updatedAt DateTime @updatedAt
+  id String @id @default(uuid())
+  
   dailyPrice Int
   totalPrice Int
 
   status BookingStatus @default(PENDING)
+  payments Payment[]
 
-  userId Int
+  userId String
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  apartmentId Int
+  createdAt DateTime @default(now())
+  startDate DateTime
+  endDate DateTime
+  updatedAt DateTime @updatedAt
+  
+  apartmentId String
   apartment Apartment @relation(fields: [apartmentId], references: [id], onDelete: Cascade)
 }
 
-enum BookingStatus {
-  PENDING
-  APPROVED
-  COMPLETED
-  CANCELLED
+model Payment {
+  id                String        @id @default(uuid())
+
+  bookingId         String
+  booking           Booking       @relation(fields: [bookingId], references: [id])
+
+  amount            Decimal       
+  currency          String        @default("UAH")
+
+  status            PaymentStatus @default(PENDING)
+  provider          String        @default("LIQPAY") 
+
+  providerPaymentId String?       
+
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
 }
 

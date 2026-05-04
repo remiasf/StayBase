@@ -14,40 +14,40 @@ export class UsersController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Get('me')
-  getMyProfile(@CurrentUserID() userId: number) {
+  getMyProfile(@CurrentUserID() userId: string) {
     return this.usersService.getMyProfile(userId);
   }
 
   @ApiBearerAuth()
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.usersService.findOne(+id);
+    return this.usersService.findOne(id);
   }
 
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Patch('me/password')
-  updatePassword(@CurrentUserID() id: number, @Body() dto: UpdatePasswordDto) {
+  updatePassword(@CurrentUserID() id: string, @Body() dto: UpdatePasswordDto) {
     return this.usersService.updatePassword(id, dto);
   }
 
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Patch('me/info')
-  updateInfo(@CurrentUserID() id: number, @Body() dto: UpdateInfoDto) {
+  updateInfo(@CurrentUserID() id: string, @Body() dto: UpdateInfoDto) {
     return this.usersService.updateInfo(id, dto);
   }
   
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)  
   @Delete('me')
-  remove(@CurrentUserID() id: number) {
+  remove(@CurrentUserID() id: string) {
     return this.usersService.remove(id);
   }
 
   @ApiBearerAuth()
   @Patch('me/login')
-  updateLogin(@CurrentUserID() id: number, @Body() dto: UpdateLoginDto) {
+  updateLogin(@CurrentUserID() id: string, @Body() dto: UpdateLoginDto) {
     return this.usersService.updateLogin(id, dto);
   }
 }

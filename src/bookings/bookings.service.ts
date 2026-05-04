@@ -7,13 +7,13 @@ import { FilterBookingDto } from './dto/filter-booking.dto';
 @Injectable()
 export class BookingsService {
   constructor(private prisma: PrismaService){}
-  async createBooking( id:number ,dto: CreateBookingDto) {
+  async createBooking( id: string ,dto: CreateBookingDto) {
     return this.prisma.$transaction(async (tx) => {
       const apartment = await tx.apartment.findUnique({
         where: {
           id: dto.apartmentId,
         },
-        select:{ price: true, userId: true}
+        select:{ discountPrice: true, userId: true}
       });
 
       if (!apartment) {
@@ -64,8 +64,8 @@ export class BookingsService {
           endDate: end,
           apartmentId: dto.apartmentId,
           userId: id,
-          dailyPrice: apartment.price,
-          totalPrice: apartment.price * rentPeriod
+          dailyPrice: apartment.discountPrice,
+          totalPrice: apartment.discountPrice * rentPeriod
         }
       });
 
@@ -81,7 +81,7 @@ export class BookingsService {
     }); 
   }
 
-  async myBookings(id: number, dto: FilterBookingDto) {
+  async myBookings(id: string, dto: FilterBookingDto) {
     const {limit = 10, page = 1, status} = dto;
     
     const safeLimit = Math.min(limit, 100);
@@ -124,7 +124,7 @@ export class BookingsService {
     };
   }
 
-  async landlordRequests(landlordId: number, dto: FilterBookingDto) {
+  async landlordRequests(landlordId: string, dto: FilterBookingDto) {
     const {limit = 10, page = 1, status} = dto;
     
     const safeLimit = Math.min(limit, 100);
@@ -169,7 +169,7 @@ export class BookingsService {
     }
   }
   
-  async bookingInfo(bookingId: number, userId: number) {
+  async bookingInfo(bookingId: string, userId: string) {
 
     const booking = await this.prisma.booking.findUnique({
       where:{
@@ -185,7 +185,7 @@ export class BookingsService {
     return booking;
   }
 
-  async landlordBookingInfo(bookingId: number, landlordId: number) {
+  async landlordBookingInfo(bookingId: string, landlordId: string) {
     const booking = await this.prisma.booking.findFirst({ 
       where: {
         id: bookingId,
@@ -216,7 +216,7 @@ export class BookingsService {
     return booking;
   }
 
-  async userCancelBooking(bookingId: number, userId: number) {
+  async userCancelBooking(bookingId: string, userId: string) {
     try{
       const cancelledBooking = await this.prisma.booking.update({
         where: {
@@ -246,7 +246,7 @@ export class BookingsService {
     }
   }
 
-  async landlordRejectBooking(bookingId: number, landlordId: number){
+  async landlordRejectBooking(bookingId: string, landlordId: string){
     try {
       const rejectedBooking = await this.prisma.booking.update({
         where: {
@@ -276,7 +276,7 @@ export class BookingsService {
     }
   }
 
-  async landlordApproveBooking(bookingId: number, landlordId: number){
+  async landlordApproveBooking(bookingId: string, landlordId: string){
     try {
       const approvedBooking = await this.prisma.booking.update({
         where: {

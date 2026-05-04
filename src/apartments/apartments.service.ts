@@ -10,15 +10,20 @@ export class ApartmentsService {
   
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(userId: number, createApartmentDto: CreateApartmentDto) {
+  async create(userId: string, createApartmentDto: CreateApartmentDto) {
     const newApartment = await this.prisma.apartment.create({
       data: {
         title: createApartmentDto.title,
+        description: createApartmentDto.description,
+        city: createApartmentDto.city,
+        address: createApartmentDto.address,
+        maxGuests: createApartmentDto.maxGuests,
         price: createApartmentDto.price,
         rooms: createApartmentDto.rooms,
         discountPrice: createApartmentDto.price,
         size: createApartmentDto.size,
-        userId: userId
+        userId: userId,
+    
       }
     });
 
@@ -83,10 +88,10 @@ export class ApartmentsService {
       }
   }
 
-  async findOne(id: number) {
+  async findOne(id: string) {
     const apartment = await this.prisma.apartment.findUnique({
       where: { id }
-    }); // <-- Теперь ищем в базе, а не в массиве
+    });
 
     if (!apartment) {
       throw new NotFoundException(`Apartment with ID ${id} not found, sorry!`);
@@ -94,7 +99,7 @@ export class ApartmentsService {
     return apartment;
   }
 
-  async update(id: number, updateApartmentDto: UpdateApartmentDto) {
+  async update(id: string, updateApartmentDto: UpdateApartmentDto) {
     if(updateApartmentDto.discountPrice !== undefined){
       throw new BadRequestException('You are able to apply discount only using special method setDiscount');
     }
@@ -111,7 +116,7 @@ export class ApartmentsService {
     });
   }
 
-  async setDiscount(id: number, discountDto: DiscountApartmentDto) {
+  async setDiscount(id: string, discountDto: DiscountApartmentDto) {
     
     const apartment = await this.findOne(id);
     const currentPrice = apartment.price;
@@ -123,7 +128,7 @@ export class ApartmentsService {
     });
   }
 
-  async remove(id: number) {
+  async remove(id: string) {
     await this.findOne(id); // Проверяем, есть ли она
 
     await this.prisma.apartment.delete({

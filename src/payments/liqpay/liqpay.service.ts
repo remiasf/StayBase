@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import * as crypto from 'crypto';
 import { PrismaService } from 'src/prisma/prisma.service';
 
@@ -10,15 +10,33 @@ export class LiqPayService {
     private readonly publicKey = process.env.LIQPAY_PUBLIC_KEY;
     private readonly privateKey = process.env.LIQPAY_PRIVATE_KEY;
 
-    async generatePaymentParams(bookingId: number){
+    async generatePaymentParams(bookingId: string){
         const bookingInfo = await this.prisma.booking.findUnique({
             where: {id: bookingId},
-            select: {totalPrice: true}
+            select: {totalPrice: true, status: true}
         });
 
         if(!bookingInfo){
             throw new NotFoundException(`Booking ${bookingId} not found`);
         }
+
+        switch (bookingInfo.status) {
+            case 'PENDING':
+                throw new ForbiddenException('Booking is not approved yet');
+            case 'CANCELLED':
+                throw new ForbiddenException('Booking is canceled');
+            case 'COMPLETED':
+                throw new ConflictException('Booking is completed');
+            default:
+                break;
+        }
+
+        const newPayment = await this.prisma.payment.create({
+            data:{
+                bookingId: bookingId,
+                amount: bookingInfo.totalPrice,
+            }
+        })
 
         const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
 
@@ -31,7 +49,7 @@ export class LiqPayService {
             amount: bookingInfo.totalPrice,
             currency: 'UAH',
             description: `Apartment payment (Booking #${bookingId})`,
-            order_id: `booking_${bookingId}_${Date.now()}`,
+            order_id: newPayment.id,
             server_url: process.env.LIQPAY_WEBHOOK_URL,
             result_url: dynamicResultUrl,
         }
@@ -54,10 +72,10 @@ export class LiqPayService {
         return incomingSignature === expectedSignature;
     }
 
-    processPaymentCallback(data: string, signature: string){
+    async processPaymentCallback(data: string, signature: string){
         const isValid = this.verifySignature(data, signature);
         
-        if(!isValid){
+        if(isValid === false){
             console.error('Safety error: invalid signature!');
             return {
                 status: 'error',
@@ -68,10 +86,45 @@ export class LiqPayService {
         const decodedString = Buffer.from(data, 'base64').toString('utf-8');
         const paymentData = JSON.parse(decodedString);
 
+        const orderId = paymentData.order_id;
+        const liqpayStatus = paymentData.status;
+
+        const liqpayTransactionId = paymentData.payment_id
+
         console.log(`Payment data: ${paymentData.order_id} status: ${paymentData.status}`);
 
-        if(paymentData.status === 'success' || paymentData.status === 'sandbox'){
-            console.log(`Booking ${paymentData.order_id} payed successfully`);
+        if(liqpayStatus === 'success' || liqpayStatus === 'sandbox'){
+            console.log(`Booking ${orderId} payed successfully`);
+            try{
+                await this.prisma.payment.update({
+                    where:{
+                        id: orderId
+                    },
+                    data:{
+                        status: 'SUCCESS',
+                        providerPaymentId: String(liqpayTransactionId)
+                    }
+                });
+            }catch(error){
+                console.error('Webhook DB Error:', error);
+            }
+        }
+
+        if(liqpayStatus === 'failure'){
+            console.log(`Booking ${orderId} payment failed `);
+            try{
+                await this.prisma.payment.update({
+                    where:{
+                        id: orderId
+                    },
+                    data:{
+                        status: 'FAILED',
+                        providerPaymentId: String(liqpayTransactionId)
+                    }
+                });
+            }catch(error){
+                console.error('Webhook DB Error:', error);;
+            }
         }
 
         return {status: 'success'};

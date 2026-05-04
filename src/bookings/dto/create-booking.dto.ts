@@ -10,7 +10,7 @@ export class CreateBookingDto {
     @IsNotEmpty()
     @IsNumber()
     @IsPositive()
-    apartmentId!: number
+    apartmentId!: string
 
     @ApiProperty({ 
         example: '2026-04-30T14:00:00.000Z', 

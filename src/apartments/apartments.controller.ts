@@ -23,7 +23,7 @@ export class ApartmentsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.LANDLORD)
   @Post()
-  create(@CurrentUserID() userId: number, @Body()  createApartmentDto: CreateApartmentDto) {
+  create(@CurrentUserID() userId: string, @Body()  createApartmentDto: CreateApartmentDto) {
     return this.apartmentsService.create(userId, createApartmentDto);
   }
 
@@ -41,7 +41,7 @@ export class ApartmentsController {
   })
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.apartmentsService.findOne(+id);
+    return this.apartmentsService.findOne(id);
   }
 
   @ApiOperation({
@@ -52,7 +52,7 @@ export class ApartmentsController {
   @Roles(Role.LANDLORD)
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateApartmentDto: UpdateApartmentDto) {
-    return this.apartmentsService.update(+id, updateApartmentDto);
+    return this.apartmentsService.update(id, updateApartmentDto);
   }
 
   @ApiOperation({
@@ -63,7 +63,7 @@ export class ApartmentsController {
   @Roles(Role.LANDLORD)
   @Patch(':id/discount')
   setDiscount(@Param('id') id: string, @Body() discountDto: DiscountApartmentDto) {
-    return this.apartmentsService.setDiscount(+id, discountDto);
+    return this.apartmentsService.setDiscount(id, discountDto);
   }
 
   @ApiOperation({
@@ -74,6 +74,6 @@ export class ApartmentsController {
   @Roles(Role.LANDLORD)
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.apartmentsService.remove(+id);
+    return this.apartmentsService.remove(id);
   }
 }

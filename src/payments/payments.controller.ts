@@ -15,7 +15,7 @@ export class PaymentsController {
     @Get('demo-checkout/:bookingId')
     async renderDemoCheckout(@Param('bookingId') bookingId: string, @Res() res: Response) {
         
-        const paymentParams = await this.liqpayService.generatePaymentParams(Number(bookingId));
+        const paymentParams = await this.liqpayService.generatePaymentParams(bookingId);
 
         const html = `
         <!DOCTYPE html>

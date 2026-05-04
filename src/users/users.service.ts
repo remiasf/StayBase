@@ -9,7 +9,7 @@ import { UpdateLoginDto } from './dto/update-login.dto';
 export class UsersService {
   constructor(private readonly prisma: PrismaService){}
 
-  async getMyProfile(userId: number) {
+  async getMyProfile(userId: string) {
 
     const user = await this.prisma.user.findUnique({
       where: {
@@ -28,7 +28,7 @@ export class UsersService {
     return user;
   }
 
-  async findOne(id: number) {
+  async findOne(id: string) {
     const user = await this.prisma.user.findUnique({
       where: {
         id: id
@@ -46,7 +46,7 @@ export class UsersService {
     return user;
   }   
 
-  async updatePassword(id: number, dto: UpdatePasswordDto) {
+  async updatePassword(id: string, dto: UpdatePasswordDto) {
     const user = await this.prisma.user.findUnique({
       where: {
         id: id
@@ -79,7 +79,7 @@ export class UsersService {
     }
   }
 
-  async updateInfo(id: number, dto: UpdateInfoDto) {
+  async updateInfo(id: string, dto: UpdateInfoDto) {
 
     const user = await this.prisma.user.findUnique({
       where:{
@@ -104,7 +104,7 @@ export class UsersService {
     }
   }
 
-  async updateLogin(id:number, dto: UpdateLoginDto){
+  async updateLogin(id:string, dto: UpdateLoginDto){
     const userWithSameLogin = await this.prisma.user.findUnique({
       where: {
         login: dto.login
@@ -130,7 +130,7 @@ export class UsersService {
   }
   
 
-  async remove(id: number) {
+  async remove(id: string) {
     const userExist = await this.prisma.user.findUnique({
       where: {
         id: id

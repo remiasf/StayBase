@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsNotEmpty, IsNumber, IsPositive } from "class-validator";
+import { IsNotEmpty, IsPositive, IsSemVer } from "class-validator";
 
 export class CreatePaymentDto{
     @ApiProperty({
@@ -7,7 +7,7 @@ export class CreatePaymentDto{
         example: 1
     })
     @IsNotEmpty()
-    @IsNumber()
+    @IsSemVer()
     @IsPositive()
-    bookingId: number;
+    bookingId: string;
 }

@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { IsString, IsPositive, MinLength, MaxLength, IsNumber, Min, Max, IsOptional, } from "class-validator";
+import { IsString, IsPositive, MinLength, MaxLength, IsNumber, Min, Max, IsOptional, IsNotEmpty, } from "class-validator";
 
 export class CreateApartmentDto {
     @ApiProperty({
@@ -11,6 +11,44 @@ export class CreateApartmentDto {
     @MinLength(5)
     @MaxLength(26)
     title!: string;
+
+    @ApiProperty({
+        maxLength: 400,
+        example: 'Cozy apartment in the center of Kyiv!'
+    })
+    @IsNotEmpty()
+    @IsString()
+    @MaxLength(400)    
+    description!: string;
+
+    @ApiProperty({
+        maxLength: 50,
+        example: 'Kyiv'
+    })
+    @IsNotEmpty()
+    @IsString()
+    @MaxLength(50)
+    city!: string;
+
+    @ApiProperty({
+        maxLength: 200,
+        example: 'Kyiv, Boychuka 1234'
+    })
+    @IsNotEmpty()
+    @IsString()
+    @MaxLength(200)
+    address!: string;
+
+    @ApiProperty({
+        minimum: 1,
+        maximum: 30,
+        example: 3
+    })
+    @IsNotEmpty()
+    @IsNumber()
+    @Min(1)
+    @Max(30)
+    maxGuests!: number;
 
     @ApiPropertyOptional({
         description: 'Appy a discount price to apartment',
@@ -54,4 +92,6 @@ export class CreateApartmentDto {
     @Min(1)
     @Max(12)
     rooms!: number;
+
+
 }
