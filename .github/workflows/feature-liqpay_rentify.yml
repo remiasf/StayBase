@@ -64,4 +64,9 @@ jobs:
         with:
           app-name: 'rentify'
           slot-name: 'Production'
+<<<<<<< HEAD
           package: package.zip
+=======
+          package: .
+          
+>>>>>>> 827137e53eb02825f784bc853742f3e74d839fc7
