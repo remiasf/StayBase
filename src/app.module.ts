@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ApartmentsModule } from './apartments/apartments.module';
@@ -10,9 +12,20 @@ import { BookingsModule } from './bookings/bookings.module';
 import { PaymentsModule } from './payments/payments.module';
 
 @Module({
-  imports: [ApartmentsModule, PrismaModule, AuthModule, ConfigModule.forRoot({
-    isGlobal: true,
-  }), UsersModule, BookingsModule, PaymentsModule],
+  imports: [
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'public')
+    }),
+    ApartmentsModule,
+    PrismaModule,
+    AuthModule,
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
+    UsersModule,
+    BookingsModule,
+    PaymentsModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
