@@ -22,15 +22,6 @@ export class CreateApartmentDto {
     description!: string;
 
     @ApiProperty({
-        maxLength: 50,
-        example: 'Kyiv'
-    })
-    @IsNotEmpty()
-    @IsString()
-    @MaxLength(50)
-    city!: string;
-
-    @ApiProperty({
         maxLength: 200,
         example: 'Kyiv, Boychuka 1234'
     })

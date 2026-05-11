@@ -50,6 +50,8 @@ model Apartment {
   images String[] @default([])
   city String
   address String
+  latitude Float
+  longitude Float
 
   price Int
   discountPrice Int?

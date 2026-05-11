@@ -4,26 +4,34 @@ import { UpdateApartmentDto } from './dto/update-apartment.dto';
 import { DiscountApartmentDto } from './dto/discount-apartment.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { FilterApartmentDto } from './dto/filter-apartment.dto';
+import { MapboxService } from 'src/mapbox/mapbox.service';
 
 @Injectable()
 export class ApartmentsService {
   
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly mapboxService: MapboxService) {}
 
   async create(userId: string, createApartmentDto: CreateApartmentDto) {
+    const addressInfo = await this.mapboxService.getCoordinates(createApartmentDto.address);
+    if (addressInfo === null) {
+      throw new BadRequestException('Invalid address provided. Please check the address and try again.');
+    }
+
+
     const newApartment = await this.prisma.apartment.create({
       data: {
         title: createApartmentDto.title,
         description: createApartmentDto.description,
-        city: createApartmentDto.city,
-        address: createApartmentDto.address,
+        city: addressInfo.city,
+        address: addressInfo.address,
+        latitude: addressInfo.latitude,
+        longitude: addressInfo.longitude,
         maxGuests: createApartmentDto.maxGuests,
         price: createApartmentDto.price,
         rooms: createApartmentDto.rooms,
         discountPrice: createApartmentDto.price,
         size: createApartmentDto.size,
         userId: userId,
-    
       }
     });
 
@@ -31,62 +39,92 @@ export class ApartmentsService {
   } 
 
   async findAll(filterDto: FilterApartmentDto, pageNumber: number) {
+  const whereCondition: any = {};
+  const { minPrice, maxPrice, minSize, maxSize, rooms, address, radius } = filterDto;
 
-      const { minPrice, maxPrice, minSize, maxSize, rooms} = filterDto;
+  const limit = 20;
+  const skip = (Number(pageNumber) - 1) * limit;
+  
+  let apartmentIdsInRadius: number[] | null = null;
 
-      const whereCondition: any = {};
-      //price filter
-      if (minPrice || maxPrice) {
-        whereCondition.discountPrice = {};
+  // Geo-search (by address and radius)
+  if (address && radius) {
+    const addressInfo = await this.mapboxService.getCoordinates(address);
+    
+    if (!addressInfo) {
+      throw new BadRequestException('Invalid address provided.');
+    }
 
-        if (minPrice) {
-          whereCondition.discountPrice.gte = Number(minPrice);
-        }
+    const nearby: { id: number, distance: number }[] = await this.prisma.$queryRaw`
+      SELECT id, ST_Distance(
+        ST_MakePoint(longitude, latitude)::geography,
+        ST_MakePoint(${addressInfo.longitude}, ${addressInfo.latitude})::geography
+      ) as distance FROM "Apartment"
+      WHERE ST_DWithin(
+        ST_MakePoint(longitude, latitude)::geography,
+        ST_MakePoint(${addressInfo.longitude}, ${addressInfo.latitude})::geography,
+        ${radius * 1000}
+      )
+      ORDER BY distance ASC;
+    `;
+    
+    apartmentIdsInRadius = nearby.map(a => a.id);
 
-        if (maxPrice) {
-          whereCondition.discountPrice.lte = Number(maxPrice);
-        }
-      }
-      //size filter
-      if (minSize || maxSize) {
-        whereCondition.size = {};
+    if (apartmentIdsInRadius.length === 0) {
+      return { data: [], meta: { total: 0, page: pageNumber, lastPage: 0 } };
+    }
 
-        if(minSize){
-          whereCondition.size.gte = Number(minSize);
-        }
-        if(maxSize){
-          whereCondition.size.lte = Number(maxSize);
-        }
-      }
-      //rooms number filter
-      if (rooms) {
-        whereCondition.rooms = Number(rooms);
-      }
-
-      const limit = 20;
-      const skip = (pageNumber - 1) * limit;
-
-
-
-      const apartments = await this.prisma.apartment.findMany({
-        where: whereCondition,
-        take  : limit,
-        skip: skip,
-      });
-
-      const totalCount = await this.prisma.apartment.count({
-        where: whereCondition
-      });
-
-      return {
-        data: apartments,
-        meta: {
-          total: totalCount,
-          page: filterDto.page,
-          lastPage: Math.ceil(totalCount / limit)
-        }
-      }
+    whereCondition.id = { in: apartmentIdsInRadius };
   }
+
+  // Price filter
+  if (minPrice || maxPrice) {
+    whereCondition.discountPrice = {
+      ...(minPrice && { gte: Number(minPrice) }),
+      ...(maxPrice && { lte: Number(maxPrice) }),
+    };
+  }
+
+  // Size filter
+  if (minSize || maxSize) {
+    whereCondition.size = {
+      ...(minSize && { gte: Number(minSize) }),
+      ...(maxSize && { lte: Number(maxSize) }),
+    };
+  }
+
+  // Rooms quantity filter
+  if (rooms) {
+    whereCondition.rooms = Number(rooms);
+  }
+
+  
+
+  // DB query with pagination
+  const [apartments, totalCount] = await Promise.all([
+    this.prisma.apartment.findMany({
+      where: whereCondition,
+      take: limit,
+      skip: skip,
+    }),
+    this.prisma.apartment.count({ where: whereCondition }),
+  ]);
+
+  if (apartmentIdsInRadius) {
+    apartments.sort((a, b) => {
+      return apartmentIdsInRadius!.indexOf(Number(a.id)) - apartmentIdsInRadius!.indexOf(Number(b.id));
+    });
+  }
+
+  return {
+    data: apartments,
+    meta: {
+      total: totalCount,
+      page: Number(pageNumber),
+      lastPage: Math.ceil(totalCount / limit),
+    },
+  };
+}
 
   async findOne(id: string) {
     const apartment = await this.prisma.apartment.findUnique({
@@ -104,8 +142,19 @@ export class ApartmentsService {
       throw new BadRequestException('You are able to apply discount only using special method setDiscount');
     }
     
-    const dataToUpdate: any = {...updateApartmentDto};
 
+    const dataToUpdate: any = {...updateApartmentDto};
+    if(updateApartmentDto.address !== undefined && updateApartmentDto.address !== null){
+      const addressInfo = await this.mapboxService.getCoordinates(updateApartmentDto.address);
+      if (addressInfo === null) {
+        throw new BadRequestException('Invalid address provided. Please check the address and try again.');
+      }
+      const { latitude, longitude, city, address } = addressInfo;
+      dataToUpdate.latitude = latitude;
+      dataToUpdate.longitude = longitude;
+      dataToUpdate.city = city;
+      dataToUpdate.address = address;
+    }
     if(updateApartmentDto.price){
       dataToUpdate.discountPrice = updateApartmentDto.price;
     }

@@ -22,7 +22,7 @@ async function bootstrap() {
   }));
 
   const config = new DocumentBuilder()
-    .setTitle('GaijinPot API') 
+    .setTitle('staybase.software API') 
     .setDescription('Apartment rent documentation')
     .setVersion('2.0')
     .addBearerAuth() 
