@@ -45,17 +45,19 @@ export class ApartmentsService {
   const limit = 20;
   const skip = (Number(pageNumber) - 1) * limit;
   
-  let apartmentIdsInRadius: number[] | null = null;
+  let apartmentIdsInRadius: string[] = [];
+  let isGeoSearch = false; // Флаг, чтобы понимать, нужен ли особый режим пагинации
 
   // Geo-search (by address and radius)
   if (address && radius) {
+    isGeoSearch = true;
     const addressInfo = await this.mapboxService.getCoordinates(address);
     
     if (!addressInfo) {
       throw new BadRequestException('Invalid address provided.');
     }
 
-    const nearby: { id: number, distance: number }[] = await this.prisma.$queryRaw`
+    const nearby: { id: string, distance: number }[] = await this.prisma.$queryRaw`
       SELECT id, ST_Distance(
         ST_MakePoint(longitude, latitude)::geography,
         ST_MakePoint(${addressInfo.longitude}, ${addressInfo.latitude})::geography
@@ -71,7 +73,7 @@ export class ApartmentsService {
     apartmentIdsInRadius = nearby.map(a => a.id);
 
     if (apartmentIdsInRadius.length === 0) {
-      return { data: [], meta: { total: 0, page: pageNumber, lastPage: 0 } };
+      return { data: [], meta: { total: 0, page: Number(pageNumber), lastPage: 0 } };
     }
 
     whereCondition.id = { in: apartmentIdsInRadius };
@@ -98,22 +100,26 @@ export class ApartmentsService {
     whereCondition.rooms = Number(rooms);
   }
 
-  
+  // Сначала считаем общее количество (totalCount нужен для метадаты)
+  const totalCount = await this.prisma.apartment.count({ where: whereCondition });
 
-  // DB query with pagination
-  const [apartments, totalCount] = await Promise.all([
-    this.prisma.apartment.findMany({
-      where: whereCondition,
-      take: limit,
-      skip: skip,
-    }),
-    this.prisma.apartment.count({ where: whereCondition }),
-  ]);
+  // DB query
+  let apartments = await this.prisma.apartment.findMany({
+    where: whereCondition,
+    // ВНИМАНИЕ: Применяем пагинацию БД только если это НЕ гео-поиск
+    ...(!isGeoSearch ? { take: limit, skip: skip } : {}),
+  });
 
-  if (apartmentIdsInRadius) {
+  // Если это гео-поиск, мы достали все подходящие под фильтры квартиры без лимита.
+  // Теперь нужно их отсортировать и обрезать (сделать пагинацию) вручную.
+  if (isGeoSearch && apartmentIdsInRadius) {
+    // 1. Сортируем строго по порядку ID, который выдал PostGIS (от ближайшего)
     apartments.sort((a, b) => {
-      return apartmentIdsInRadius!.indexOf(Number(a.id)) - apartmentIdsInRadius!.indexOf(Number(b.id));
+      return apartmentIdsInRadius!.indexOf(a.id) - apartmentIdsInRadius!.indexOf(b.id);
     });
+
+    // 2. Вручную обрезаем массив под нужную страницу (пагинация в памяти)
+    apartments = apartments.slice(skip, skip + limit);
   }
 
   return {
