@@ -6,7 +6,7 @@ name: Build and deploy Node.js app to Azure Web App - rentify
 on:
   push:
     branches:
-      - feature/liqpay
+      - main
   workflow_dispatch:
 
 jobs:
@@ -26,11 +26,9 @@ jobs:
       - name: npm install, build, and test
         run: |
           npm install
+          npx prisma generate
           npm run build
-          echo "=== ПРОВЕРКА ФАЙЛОВ ==="
-          ls -la
-          echo "=== ПРОВЕРКА ПАПКИ DIST ==="
-          ls -la dist || echo "ПАПКА DIST НЕ НАЙДЕНА!"
+          
 
       - name: Zip artifact for deployment
         run: zip -r package.zip . -x "*.git*"
