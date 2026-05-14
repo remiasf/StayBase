@@ -23,11 +23,20 @@ jobs:
         with:
           node-version: '24.x'
 
+      - name: npm install, build, and generate
+        run: |
+          npm ci
+          npx prisma generate
+          npm run build
+
+      - name: Zip artifact for deployment
+        run: zip -r package.zip . -x "*.git*"
+
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: node-app
-          path: .
+          path: package.zip
 
   deploy:
     runs-on: ubuntu-latest
@@ -55,5 +64,5 @@ jobs:
         with:
           app-name: 'rentify'
           slot-name: 'Production'
-          package: .
+          package: package.zip
           
