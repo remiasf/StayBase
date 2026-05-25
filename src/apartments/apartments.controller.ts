@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards, UseInterceptors, UploadedFiles, UploadedFile } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards, UseInterceptors, UploadedFiles, UploadedFile, BadRequestException } from '@nestjs/common';
 import { ApartmentsService } from './apartments.service';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import 'multer';
@@ -33,7 +33,14 @@ export class ApartmentsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.LANDLORD)
   @Post(':id/images')
-  @UseInterceptors(FilesInterceptor('images', 15))
+  @UseInterceptors(FilesInterceptor('images', 15, {
+    fileFilter(req, file, callback) {
+      if(!file.mimetype.match(/\/(jpg|jpeg|png|webp)$/)) {
+        return callback(new BadRequestException('only JPG, JPEG, PNG and WEBP allowed'), false);
+      }
+      callback(null, true);
+    },
+  }))
   async uploadImages(@Param('id') apartmentId: string ,@UploadedFiles() files: Array<Express.Multer.File>) {
     return this.apartmentsService.uploadImages(apartmentId, files);
   }
