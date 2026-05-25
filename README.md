@@ -33,5 +33,5 @@ For local development and testing, the application is fully containerized. You d
 
 ### 1. Clone the repository
 ```bash
-git clone https://github.com/remiasf/StayBase
-cd staybase-api
+git clone https://github.com/remiasf/StayBase.git
+cd StayBase
