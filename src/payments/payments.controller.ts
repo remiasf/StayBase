@@ -2,7 +2,9 @@ import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Res } from '@
 import { LiqPayService } from './liqpay/liqpay.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { Response } from 'express';
+import { ApiBearerAuth } from '@nestjs/swagger';
 
+@ApiBearerAuth()
 @Controller('payments')
 export class PaymentsController {
     constructor(private readonly liqpayService: LiqPayService){}

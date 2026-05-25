@@ -24,7 +24,7 @@ async function bootstrap() {
   const config = new DocumentBuilder()
     .setTitle('staybase.software API') 
     .setDescription('Apartment rent documentation')
-    .setVersion('2.0')
+    .setVersion('2.2')
     .addBearerAuth() 
     .build();
     

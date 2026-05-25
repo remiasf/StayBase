@@ -30,7 +30,7 @@ export class ApartmentsController {
   }
 
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, IsApartmentOwnerGuard, RolesGuard)
   @Roles(Role.LANDLORD)
   @Post(':id/images')
   @UseInterceptors(FilesInterceptor('images', 15, {
@@ -46,9 +46,9 @@ export class ApartmentsController {
   }
 
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, IsApartmentOwnerGuard, RolesGuard)
   @Roles(Role.LANDLORD)
-  @Post(':id/images/remove')
+  @Delete(':id/images/remove')
   @UseInterceptors(FilesInterceptor('images', 15))
   async removeImages(@Param('id') apartmentId: string ,@UploadedFiles() files: Array<Express.Multer.File>) {
     return this.apartmentsService.removeImages(apartmentId);

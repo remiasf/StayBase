@@ -5,7 +5,7 @@ import { DiscountApartmentDto } from './dto/discount-apartment.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { FilterApartmentDto } from './dto/filter-apartment.dto';
 import { MapboxService } from '../mapbox/mapbox.service';
-import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
 @Injectable()
 export class ApartmentsService {
@@ -13,7 +13,7 @@ export class ApartmentsService {
   constructor(
     private readonly prisma: PrismaService, 
     private readonly mapboxService: MapboxService,
-    private readonly cloudinareServide: CloudinaryService
+    private readonly cloudinaryServise: CloudinaryService
   ) {}
 
   async create(userId: string, createApartmentDto: CreateApartmentDto) {
@@ -45,6 +45,11 @@ export class ApartmentsService {
   
   async uploadImages(apartmentId: string, files: Array<Express.Multer.File>) {
     const MAX_IMAGES_LIMIT = 20;
+
+    if(!files || files.length === 0){
+      throw new BadRequestException('No images provided');
+    }
+
     const apartment = await this.prisma.apartment.findUnique({
       where: {
         id: apartmentId
@@ -59,19 +64,19 @@ export class ApartmentsService {
     }
 
     const currentImagesCount = apartment.images.length || 0;
-    const newImagesCount = files.length;
+    const newImagesCount = files.length || 0;
 
     if(currentImagesCount + newImagesCount > MAX_IMAGES_LIMIT){
       const allowedLeft = MAX_IMAGES_LIMIT - currentImagesCount;
       throw new BadRequestException(`Amount of loaded images is above the limit of ${MAX_IMAGES_LIMIT}, only ${allowedLeft} allowed`);
     }
 
-    const uploadTasks = files.map(file => this.cloudinareServide.uploadImage(file));
+    const uploadTasks = files.map(file => this.cloudinaryServise.uploadImage(file));
     const uploadResults = await Promise.all(uploadTasks);
 
     const imageUrls = uploadResults.map(result => result.secure_url);
 
-    return this.prisma.apartment.update({
+    const updatedApartment = await this.prisma.apartment.update({
       where: {
         id: apartmentId,
       },
@@ -81,6 +86,10 @@ export class ApartmentsService {
         },
       },
     });
+
+    console.log(updatedApartment);
+
+    return updatedApartment;
   }
 
   async removeImages(apartmentId: string){
@@ -97,7 +106,7 @@ export class ApartmentsService {
       throw new NotFoundException('Apartment not found');
     }
 
-    await this.prisma.apartment.update({
+    await await this.prisma.apartment.update({
       where: {
         id: apartmentId
       },
@@ -256,12 +265,12 @@ export class ApartmentsService {
   }
 
   async remove(id: string) {
-    await this.findOne(id); // Проверяем, есть ли она
+    const apartment = await this.findOne(id);
 
     await this.prisma.apartment.delete({
       where: { id }
     });
     
-    return `This action removes a #${id} apartment`;
+    return apartment;
   }
 }

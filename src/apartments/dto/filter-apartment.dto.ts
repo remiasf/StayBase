@@ -36,7 +36,7 @@ export class FilterApartmentDto {
 
   @ApiProperty({ 
     description: 'Number of rooms', 
-    example: 2, 
+    example: 1, 
     minimum: 1, 
     maximum: 20, 
     required: false 
