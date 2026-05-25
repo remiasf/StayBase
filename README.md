@@ -4,6 +4,7 @@
 [![Prisma](https://img.shields.io/badge/Prisma-3982CE?style=for-the-badge&logo=Prisma&logoColor=white)](https://www.prisma.io/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)](https://postgresql.org/)
 [![Docker](https://img.shields.io/badge/Docker-2CA5E0?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
+[![Mapbox](https://img.shields.io/badge/Mapbox-000000?style=for-the-badge&logo=mapbox&logoColor=white)](https://www.mapbox.com/)
 [![Azure](https://img.shields.io/badge/Microsoft_Azure-0089D6?style=for-the-badge&logo=microsoft-azure&logoColor=white)](https://azure.microsoft.com/)
 
 A robust, production-ready REST API for an apartment rental platform. Built with **NestJS** and **TypeScript**, featuring advanced image processing, secure payments, and geospatial data integration.
@@ -32,5 +33,5 @@ For local development and testing, the application is fully containerized. You d
 
 ### 1. Clone the repository
 ```bash
-git clone [https://github.com/](https://github.com/)[твой-юзернейм]/staybase-api.git
-cd staybase-api
+git clone https://github.com/remiasf/StayBase.git
+cd StayBase
