@@ -8,7 +8,7 @@
 
 A robust, production-ready REST API for an apartment rental platform. Built with **NestJS** and **TypeScript**, featuring advanced image processing, secure payments, and geospatial data integration.
 
-🌍 **Live Production:** [https://staybase.software](https://staybase.software)
+🌍 **Live Production (Swagger):** [https://staybase.software](https://staybase.software/api#)
 
 ## ✨ Core Features
 * **Advanced Media Handling:** Multi-file image uploads streamed directly from memory to Cloudinary, with strict validation limits (max 15 images/apartment).
