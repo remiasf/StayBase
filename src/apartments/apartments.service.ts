@@ -2,14 +2,19 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { CreateApartmentDto } from './dto/create-apartment.dto';
 import { UpdateApartmentDto } from './dto/update-apartment.dto';
 import { DiscountApartmentDto } from './dto/discount-apartment.dto';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { FilterApartmentDto } from './dto/filter-apartment.dto';
-import { MapboxService } from 'src/mapbox/mapbox.service';
+import { MapboxService } from '../mapbox/mapbox.service';
+import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 
 @Injectable()
 export class ApartmentsService {
   
-  constructor(private readonly prisma: PrismaService, private readonly mapboxService: MapboxService) {}
+  constructor(
+    private readonly prisma: PrismaService, 
+    private readonly mapboxService: MapboxService,
+    private readonly cloudinareServide: CloudinaryService
+  ) {}
 
   async create(userId: string, createApartmentDto: CreateApartmentDto) {
     const addressInfo = await this.mapboxService.getCoordinates(createApartmentDto.address);
@@ -37,6 +42,70 @@ export class ApartmentsService {
 
     return newApartment;
   } 
+  
+  async uploadImages(apartmentId: string, files: Array<Express.Multer.File>) {
+    const MAX_IMAGES_LIMIT = 20;
+    const apartment = await this.prisma.apartment.findUnique({
+      where: {
+        id: apartmentId
+      },
+      select: {
+        images: true,
+      }
+    });
+
+    if (!apartment){
+      throw new NotFoundException('Apartment not found');
+    }
+
+    const currentImagesCount = apartment.images.length || 0;
+    const newImagesCount = files.length;
+
+    if(currentImagesCount + newImagesCount > MAX_IMAGES_LIMIT){
+      const allowedLeft = MAX_IMAGES_LIMIT - currentImagesCount;
+      throw new BadRequestException(`Amount of loaded images is above the limit of ${MAX_IMAGES_LIMIT}, only ${allowedLeft} allowed`);
+    }
+
+    const uploadTasks = files.map(file => this.cloudinareServide.uploadImage(file));
+    const uploadResults = await Promise.all(uploadTasks);
+
+    const imageUrls = uploadResults.map(result => result.secure_url);
+
+    return this.prisma.apartment.update({
+      where: {
+        id: apartmentId,
+      },
+      data:{
+        images:{
+          push: imageUrls,
+        },
+      },
+    });
+  }
+
+  async removeImages(apartmentId: string){
+     const apartment = await this.prisma.apartment.findUnique({
+      where: {
+        id: apartmentId
+      },
+      select: {
+        images: true,
+      }
+    });
+
+    if (!apartment){
+      throw new NotFoundException('Apartment not found');
+    }
+
+    await this.prisma.apartment.update({
+      where: {
+        id: apartmentId
+      },
+      data: {
+        images: []
+      }
+    })
+  }
 
   async findAll(filterDto: FilterApartmentDto, pageNumber: number) {
   const whereCondition: any = {};
@@ -46,7 +115,15 @@ export class ApartmentsService {
   const skip = (Number(pageNumber) - 1) * limit;
   
   let apartmentIdsInRadius: string[] = [];
-  let isGeoSearch = false; // Флаг, чтобы понимать, нужен ли особый режим пагинации
+  let isGeoSearch = false; 
+  let finalPageNumber = 1;
+
+  if( Number(pageNumber) < 1){
+    finalPageNumber = 1;
+  }else{
+    finalPageNumber = Number(pageNumber);
+  }
+
 
   // Geo-search (by address and radius)
   if (address && radius) {
@@ -100,25 +177,20 @@ export class ApartmentsService {
     whereCondition.rooms = Number(rooms);
   }
 
-  // Сначала считаем общее количество (totalCount нужен для метадаты)
   const totalCount = await this.prisma.apartment.count({ where: whereCondition });
 
   // DB query
   let apartments = await this.prisma.apartment.findMany({
     where: whereCondition,
-    // ВНИМАНИЕ: Применяем пагинацию БД только если это НЕ гео-поиск
     ...(!isGeoSearch ? { take: limit, skip: skip } : {}),
   });
 
-  // Если это гео-поиск, мы достали все подходящие под фильтры квартиры без лимита.
-  // Теперь нужно их отсортировать и обрезать (сделать пагинацию) вручную.
+ 
   if (isGeoSearch && apartmentIdsInRadius) {
-    // 1. Сортируем строго по порядку ID, который выдал PostGIS (от ближайшего)
     apartments.sort((a, b) => {
       return apartmentIdsInRadius!.indexOf(a.id) - apartmentIdsInRadius!.indexOf(b.id);
     });
 
-    // 2. Вручную обрезаем массив под нужную страницу (пагинация в памяти)
     apartments = apartments.slice(skip, skip + limit);
   }
 

@@ -1,5 +1,7 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards, UseInterceptors, UploadedFiles, UploadedFile } from '@nestjs/common';
 import { ApartmentsService } from './apartments.service';
+import { FilesInterceptor } from '@nestjs/platform-express';
+import 'multer';
 import { CreateApartmentDto } from './dto/create-apartment.dto';
 import { UpdateApartmentDto } from './dto/update-apartment.dto';
 import { DiscountApartmentDto } from './dto/discount-apartment.dto';
@@ -25,6 +27,24 @@ export class ApartmentsController {
   @Post()
   create(@CurrentUserID() userId: string, @Body()  createApartmentDto: CreateApartmentDto) {
     return this.apartmentsService.create(userId, createApartmentDto);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.LANDLORD)
+  @Post(':id/images')
+  @UseInterceptors(FilesInterceptor('images', 15))
+  async uploadImages(@Param('id') apartmentId: string ,@UploadedFiles() files: Array<Express.Multer.File>) {
+    return this.apartmentsService.uploadImages(apartmentId, files);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.LANDLORD)
+  @Post(':id/images/remove')
+  @UseInterceptors(FilesInterceptor('images', 15))
+  async removeImages(@Param('id') apartmentId: string ,@UploadedFiles() files: Array<Express.Multer.File>) {
+    return this.apartmentsService.removeImages(apartmentId);
   }
 
   @ApiOperation({
