@@ -6,10 +6,13 @@
 [![Docker](https://img.shields.io/badge/Docker-2CA5E0?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
 [![Mapbox](https://img.shields.io/badge/Mapbox-000000?style=for-the-badge&logo=mapbox&logoColor=white)](https://www.mapbox.com/)
 [![Azure](https://img.shields.io/badge/Microsoft_Azure-0089D6?style=for-the-badge&logo=microsoft-azure&logoColor=white)](https://azure.microsoft.com/)
+[![Gemini API](https://img.shields.io/badge/Gemini_API-8E75B2?style=for-the-badge&logo=googlegemini&logoColor=white)](https://ai.google.dev/)
 
 A robust, production-ready REST API for an apartment rental platform. Built with **NestJS** and **TypeScript**, featuring advanced image processing, secure payments, and geospatial data integration.
 
 🌍 **Live Production (Swagger):** [https://staybase.software](https://staybase.software/api#)
+
+🌍 **Demo Video (2:15 min):** [https://staybase.software](https://staybase.software/api#)
 
 ## ✨ Core Features
 * **Advanced Media Handling:** Multi-file image uploads streamed directly from memory to Cloudinary, with strict validation limits (max 15 images/apartment).
