@@ -13,7 +13,7 @@ export class LiqPayService {
     async generatePaymentParams(bookingId: string){
         const bookingInfo = await this.prisma.booking.findUnique({
             where: {id: bookingId},
-            select: {totalPrice: true, status: true}
+            select: {totalPrice: true, status: true, discountPercent: true}
         });
 
         if(!bookingInfo){
@@ -31,10 +31,13 @@ export class LiqPayService {
                 break;
         }
 
+        const discount = bookingInfo.discountPercent || 0;
+        const finalAmount = Math.round(bookingInfo.totalPrice * (1 - discount / 100) * 100) / 100;
+
         const newPayment = await this.prisma.payment.create({
             data:{
                 bookingId: bookingId,
-                amount: bookingInfo.totalPrice,
+                amount: finalAmount
             }
         })
 
@@ -42,18 +45,12 @@ export class LiqPayService {
 
         const dynamicResultUrl = `${frontendUrl}/bookings/${bookingId}`
 
-        console.log('--- LIQPAY DEBUG ---');
-console.log('Public Key:', this.publicKey);
-console.log('Private Key length:', this.privateKey?.length); // Выводим длину, чтобы не светить сам ключ
-console.log('Amount:', bookingInfo.totalPrice);
-console.log('--------------------');
-
         const params = {
             public_key: this.publicKey,
             version: 3,
             action: 'pay',
-            amount: bookingInfo.totalPrice,
-            currency: 'UAH',
+            amount: finalAmount,
+            currency: 'USD',
             description: `Apartment payment (Booking #${bookingId})`,
             order_id: newPayment.id,
             server_url: process.env.LIQPAY_WEBHOOK_URL,
@@ -103,15 +100,21 @@ console.log('--------------------');
         if(liqpayStatus === 'success' || liqpayStatus === 'sandbox'){
             console.log(`Booking ${orderId} payed successfully`);
             try{
-                await this.prisma.payment.update({
+                const updatedPayment = await this.prisma.payment.update({
                     where:{
                         id: orderId
                     },
                     data:{
                         status: 'SUCCESS',
                         providerPaymentId: String(liqpayTransactionId)
-                    }
+                    },
+                    select: {bookingId: true}
                 });
+
+                await this.prisma.booking.update({
+                    where: {id: updatedPayment.bookingId},
+                    data: { status: 'COMPLETED' }
+                })
             }catch(error){
                 console.error('Webhook DB Error:', error);
             }

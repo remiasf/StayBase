@@ -6,6 +6,8 @@ import { MapboxService } from '../mapbox/mapbox.service';
 import { ConfigService } from '@nestjs/config';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { BadRequestException } from '@nestjs/common';
+import { CurrencyConversion } from '../currency-conversion/currency-conversion.service';
+import { AiService } from '../ai/ai.service';
 
 describe('ApartmentsService', () => {
     let service: ApartmentsService;
@@ -23,7 +25,9 @@ describe('ApartmentsService', () => {
     const mockJwt = { sign: jest.fn() };
     const mockMapBox = { getCoordinates: jest.fn().mockResolvedValue({ lat: 50.4501, lng: 30.5234 }) };
     const mockConfig = { get: jest.fn().mockReturnValue('fake_secret') };
-    const mockCloudinary = {uploadImage: jest.fn()};
+    const mockCloudinary = { uploadImage: jest.fn() };
+    const mockAi = { analizePropertyDescription: jest.fn() };
+    const mockCurrencyConversion = { convertToUsd: jest.fn() };
 
 
     beforeEach(async () => {
@@ -34,7 +38,9 @@ describe('ApartmentsService', () => {
                 { provide: JwtService, useValue: mockJwt },
                 { provide: MapboxService, useValue: mockMapBox },
                 { provide: ConfigService, useValue: mockConfig },
-                { provide: CloudinaryService, useValue: mockCloudinary}
+                { provide: CloudinaryService, useValue: mockCloudinary},
+                { provide: AiService, useValue: mockAi},
+                { provide: CurrencyConversion, useValue: mockCurrencyConversion}
             ],
         }).compile();
 
@@ -143,7 +149,8 @@ describe('ApartmentsService', () => {
                 description: "Cozy apartment in the center of Kyiv!",
                 address: "Kyiv, Boychuka 1234",
                 maxGuests: 3,
-                discountPrice: 1200,
+                discountPercent: 15,
+                currency: 'UAH',
                 price: 1350,
                 size: 25,
                 rooms: 1
@@ -157,11 +164,13 @@ describe('ApartmentsService', () => {
             };
 
             mockMapBox.getCoordinates.mockResolvedValue(mockLocationData);
+            mockCurrencyConversion.convertToUsd.mockResolvedValue({ amountInUsd: 35, currencyCode: 'UAH' });
 
             const expectedApartment = {
                 id: '1',
                 ...createDto,
                 ...mockLocationData,
+                priceUsd: 35,
                 createdAt: new Date(),
                 updatedAt: new Date(),
             };
@@ -176,8 +185,8 @@ describe('ApartmentsService', () => {
             expect(mockPrisma.apartment.create).toHaveBeenCalledWith({
                 data: {
                     ...createDto,
-                    discountPrice: 1350,
                     ...mockLocationData,
+                    priceUsd: 35,
                     userId: '1'
                 }
             });
@@ -191,7 +200,8 @@ describe('ApartmentsService', () => {
                 description: "Cozy apartment in the center of Kyiv!",
                 address: "Kyiv, Boychuka 12",
                 maxGuests: 3,
-                discountPrice: 1200,
+                currency: "UAH",
+                discountPercent: 15,
                 price: 1350,
                 size: 25,
                 rooms: 1
@@ -206,7 +216,8 @@ describe('ApartmentsService', () => {
                 description: "Cozy apartment in the center of Kyiv!",
                 address: "Some invalid address",
                 maxGuests: 3,
-                discountPrice: 1200,
+                currency: "UAH",
+                discountPercent: 15,
                 price: 1350,
                 size: 25,
                 rooms: 1
@@ -228,7 +239,8 @@ describe('ApartmentsService', () => {
                 description: "Cozy apartment in the center of Kyiv!",
                 address: "Kyiv, Boychuka 1234",
                 maxGuests: 3,
-                discountPrice: 1200,
+                currency: 'UAH',
+                discountPercent: 15,
                 price: 1350,
                 size: 25,
                 rooms: 1

@@ -54,7 +54,9 @@ model Apartment {
   longitude Float
 
   price Int
-  discountPrice Int?
+  currency String
+  priceUsd Int?
+  discountPercent Int? @default(0)
 
   size Float
   rooms Int
@@ -81,6 +83,9 @@ model Amenity {
 model Booking {
   id String @id @default(uuid())
   
+  currency String
+  localPrice Int
+  discountPercent Int
   dailyPrice Int
   totalPrice Int
 

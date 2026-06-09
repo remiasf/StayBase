@@ -13,7 +13,12 @@ export class BookingsService {
         where: {
           id: dto.apartmentId,
         },
-        select:{ discountPrice: true, userId: true}
+        select:{ 
+          price: true,
+          priceUsd: true,
+          discountPercent: true, 
+          currency: true,
+          userId: true}
       });
 
       if (!apartment) {
@@ -64,8 +69,11 @@ export class BookingsService {
           endDate: end,
           apartmentId: dto.apartmentId,
           userId: id,
-          dailyPrice: apartment.discountPrice,
-          totalPrice: apartment.discountPrice * rentPeriod
+          localPrice: apartment.price,
+          currency: apartment.currency,
+          discountPercent: apartment.discountPercent,
+          dailyPrice: apartment.priceUsd,
+          totalPrice: apartment.priceUsd * rentPeriod
         }
       });
 

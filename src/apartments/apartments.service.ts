@@ -1,11 +1,13 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { CreateApartmentDto } from './dto/create-apartment.dto';
 import { UpdateApartmentDto } from './dto/update-apartment.dto';
-import { DiscountApartmentDto } from './dto/discount-apartment.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { FilterApartmentDto } from './dto/filter-apartment.dto';
 import { MapboxService } from '../mapbox/mapbox.service';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
+import { AiService } from '../ai/ai.service';
+import { CurrencyConversion } from '../currency-conversion/currency-conversion.service';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class ApartmentsService {
@@ -13,29 +15,34 @@ export class ApartmentsService {
   constructor(
     private readonly prisma: PrismaService, 
     private readonly mapboxService: MapboxService,
-    private readonly cloudinaryServise: CloudinaryService
+    private readonly cloudinaryServise: CloudinaryService,
+    private readonly aiService: AiService,
+    private readonly currencyConversion: CurrencyConversion
   ) {}
 
-  async create(userId: string, createApartmentDto: CreateApartmentDto) {
-    const addressInfo = await this.mapboxService.getCoordinates(createApartmentDto.address);
+  async create(userId: string, dto: CreateApartmentDto) {
+    const addressInfo = await this.mapboxService.getCoordinates(dto.address);
     if (addressInfo === null) {
       throw new BadRequestException('Invalid address provided. Please check the address and try again.');
     }
 
+    const currencyConversionInfo = await this.currencyConversion.convertToUsd(dto.price, dto.currency);
 
     const newApartment = await this.prisma.apartment.create({
       data: {
-        title: createApartmentDto.title,
-        description: createApartmentDto.description,
+        title: dto.title,
+        description: dto.description,
         city: addressInfo.city,
         address: addressInfo.address,
         latitude: addressInfo.latitude,
         longitude: addressInfo.longitude,
-        maxGuests: createApartmentDto.maxGuests,
-        price: createApartmentDto.price,
-        rooms: createApartmentDto.rooms,
-        discountPrice: createApartmentDto.price,
-        size: createApartmentDto.size,
+        maxGuests: dto.maxGuests,
+        price: dto.price,
+        priceUsd: currencyConversionInfo.amountInUsd,
+        currency: currencyConversionInfo.currencyCode,
+        rooms: dto.rooms,
+        discountPercent: dto.discountPercent,
+        size: dto.size,
         userId: userId,
       }
     });
@@ -224,43 +231,43 @@ export class ApartmentsService {
     return apartment;
   }
 
-  async update(id: string, updateApartmentDto: UpdateApartmentDto) {
-    if(updateApartmentDto.discountPrice !== undefined){
-      throw new BadRequestException('You are able to apply discount only using special method setDiscount');
-    }
-    
+  async update(id: string, dto: UpdateApartmentDto) {
+    const existingApartment = await this.prisma.apartment.findUnique({
+      where:{ id }
+    });
 
-    const dataToUpdate: any = {...updateApartmentDto};
-    if(updateApartmentDto.address !== undefined && updateApartmentDto.address !== null){
-      const addressInfo = await this.mapboxService.getCoordinates(updateApartmentDto.address);
-      if (addressInfo === null) {
-        throw new BadRequestException('Invalid address provided. Please check the address and try again.');
+    if( !existingApartment ){
+      throw new NotFoundException('Apartment not found');
+    }
+
+    const dataToUpdate: Prisma.ApartmentUpdateInput = {...dto};
+    
+    if( dto.address ){
+      const addressInfo = await this.mapboxService.getCoordinates(dto.address);
+
+      if( !addressInfo ){
+        throw new BadRequestException('Invalid address provided. Cannot find coordinates.');
       }
+
       const { latitude, longitude, city, address } = addressInfo;
       dataToUpdate.latitude = latitude;
       dataToUpdate.longitude = longitude;
       dataToUpdate.city = city;
       dataToUpdate.address = address;
-    }
-    if(updateApartmentDto.price){
-      dataToUpdate.discountPrice = updateApartmentDto.price;
-    }
+  }
 
+    if( dto.price !== undefined || dto.currency !== undefined){
+      const priceToConvert = dto.price ?? existingApartment.price;
+      const currencyToConvert = dto.currency ?? existingApartment.currency;
+      
+      const {amountInUsd, currencyCode} = await this.currencyConversion.convertToUsd(priceToConvert, currencyToConvert);
+      dataToUpdate.priceUsd = amountInUsd;
+      dataToUpdate.currency = currencyCode;
+    }
+  
     return this.prisma.apartment.update({
       where: { id },
       data: dataToUpdate
-    });
-  }
-
-  async setDiscount(id: string, discountDto: DiscountApartmentDto) {
-    
-    const apartment = await this.findOne(id);
-    const currentPrice = apartment.price;
-    const newPrice = Math.round(currentPrice - (currentPrice * discountDto.discountPercentage / 100)); 
-
-    return this.prisma.apartment.update({
-      where: { id },
-      data: { discountPrice: newPrice }
     });
   }
 
@@ -272,5 +279,14 @@ export class ApartmentsService {
     });
     
     return apartment;
+  }
+
+  async aiReview(id: string) {
+    const apartment = await this.findOne(id);
+
+    const aiReviewedData = await this.aiService.analyzePropertyDescription(apartment);
+    return {
+      aiReviewedData
+    }
   }
 }

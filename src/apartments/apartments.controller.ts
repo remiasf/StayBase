@@ -70,7 +70,7 @@ export class ApartmentsController {
   findOne(@Param('id') id: string) {
     return this.apartmentsService.findOne(id);
   }
-
+  
   @ApiOperation({
     summary: 'Patch apartment properties'
   })
@@ -83,17 +83,6 @@ export class ApartmentsController {
   }
 
   @ApiOperation({
-    summary: 'Set a discount to your apartment'
-  })
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, IsApartmentOwnerGuard, RolesGuard)
-  @Roles(Role.LANDLORD)
-  @Patch(':id/discount')
-  setDiscount(@Param('id') id: string, @Body() discountDto: DiscountApartmentDto) {
-    return this.apartmentsService.setDiscount(id, discountDto);
-  }
-
-  @ApiOperation({
     summary: 'Delete apartment by ID'
   })
   @ApiBearerAuth()
@@ -102,5 +91,15 @@ export class ApartmentsController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.apartmentsService.remove(id);
+  }
+
+  @ApiOperation({
+    summary: 'Get an AI consultation about apartment'
+  })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Post(':id/ai-review')
+  aiReview(@Param('id') id: string) {
+    return this.apartmentsService.aiReview(id);
   }
 }

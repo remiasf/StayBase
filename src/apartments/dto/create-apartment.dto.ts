@@ -1,7 +1,9 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { IsString, IsPositive, MinLength, MaxLength, IsNumber, Min, Max, IsOptional, IsNotEmpty, } from "class-validator";
+import { IsString, IsPositive, MinLength, MaxLength, IsNumber, Min, Max, IsOptional, IsNotEmpty, IsCurrency, Length, } from "class-validator";
+import { Transform } from 'class-transformer';
 
 export class CreateApartmentDto {
+
     @ApiProperty({
         minLength: 5,
         maxLength: 26,
@@ -12,13 +14,14 @@ export class CreateApartmentDto {
     @MaxLength(26)
     title!: string;
 
+    @Transform(({ value }) => value?.replace(/\r\n|\r|\n/g, '\\n'))
     @ApiProperty({
-        maxLength: 400,
+        maxLength: 1400,
         example: 'Cozy apartment in the center of Kyiv!'
     })
     @IsNotEmpty()
     @IsString()
-    @MaxLength(400)    
+    @MaxLength(1400)    
     description!: string;
 
     @ApiProperty({
@@ -41,19 +44,6 @@ export class CreateApartmentDto {
     @Max(30)
     maxGuests!: number;
 
-    @ApiPropertyOptional({
-        description: 'Appy a discount price to apartment',
-        minimum: 100,
-        maximum: 1000000,
-        example: 1200  
-    })
-    @IsOptional()
-    @IsNumber()
-    @IsPositive()
-    @Min(100)
-    @Max(1000000)
-    discountPrice?: number;
-
     @ApiProperty({
         description: 'Daily apartment rent fee',
         minimum: 100,
@@ -62,9 +52,32 @@ export class CreateApartmentDto {
     })
     @IsNumber()
     @IsPositive()
-    @Min(100)
-    @Max(1000000)
+    @Min(1)
+    @Max(10000000)
     price!: number;
+
+    @ApiProperty({
+        description: 'Percent of discount',
+        minimum: 0,
+        maximum: 50,
+        example: 15
+    })
+    @IsNumber()
+    @IsPositive()
+    @Min(0)
+    @Max(50)
+    discountPercent!: number;
+
+    @ApiProperty({
+        description: 'Currency code: e.g., USD, UAH, EUR',
+        maxLength: 3,
+        minLength: 3,
+        example: 'UAH'
+    })
+    @IsNotEmpty()
+    @IsString()
+    @Length(3)
+    currency!: string;
 
     @ApiProperty({
         description: 'Square meter size of the flat',
@@ -72,7 +85,7 @@ export class CreateApartmentDto {
     })
     @IsNumber()
     @IsPositive()
-    size!: number
+    size!: number;
 
     @ApiProperty({
         description: 'The number of rooms quantity',
