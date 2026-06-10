@@ -12,7 +12,7 @@ A robust, production-ready REST API for an apartment rental platform. Built with
 
 🌍 **Live Production (Swagger):** [https://staybase.software](https://staybase.software/api#)
 
-🌍 **Demo Video (2:15 min):** [https://staybase.software](https://staybase.software/api#)
+🌍 **Demo Video (2:15 min):** [https://www.youtube.com/watch?v=13YCrY0NE9Y](https://www.youtube.com/watch?v=13YCrY0NE9Y)
 
 ## ✨ Core Features
 * **Advanced Media Handling:** Multi-file image uploads streamed directly from memory to Cloudinary, with strict validation limits (max 15 images/apartment).
