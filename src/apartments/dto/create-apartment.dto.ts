@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { IsString, IsPositive, MinLength, MaxLength, IsNumber, Min, Max, IsOptional, IsNotEmpty, IsCurrency, Length, } from "class-validator";
-import { Transform } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 
 export class CreateApartmentDto {
 
@@ -38,6 +38,7 @@ export class CreateApartmentDto {
         maximum: 30,
         example: 3
     })
+    @Type(() => Number)
     @IsNotEmpty()
     @IsNumber()
     @Min(1)
@@ -50,6 +51,7 @@ export class CreateApartmentDto {
         maximum: 1000000,
         example: 1350
     })
+    @Type(() => Number)
     @IsNumber()
     @IsPositive()
     @Min(1)
@@ -62,8 +64,9 @@ export class CreateApartmentDto {
         maximum: 50,
         example: 15
     })
+    @Type(() => Number)
+    @IsNotEmpty()
     @IsNumber()
-    @IsPositive()
     @Min(0)
     @Max(50)
     discountPercent!: number;
@@ -83,6 +86,7 @@ export class CreateApartmentDto {
         description: 'Square meter size of the flat',
         example: 25
     })
+    @Type(() => Number)
     @IsNumber()
     @IsPositive()
     size!: number;
@@ -91,6 +95,7 @@ export class CreateApartmentDto {
         description: 'The number of rooms quantity',
         example: 1
     })
+    @Type(() => Number)
     @IsNumber()
     @IsPositive()
     @Min(1)
