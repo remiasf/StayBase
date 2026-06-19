@@ -7,7 +7,7 @@ export class FilterApartmentDto {
   @ApiProperty({ description: 'Minimum price per night', example: 100, required: false })
   @IsOptional()
   @IsPositive()
-  @Min(100)
+  @Min(1)
   @IsNumber()
   @Type(() => Number)
   minPrice?: number;

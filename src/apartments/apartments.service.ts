@@ -173,23 +173,38 @@ export class ApartmentsService {
   }
 
   // Price filter
-  if (minPrice || maxPrice) {
-    whereCondition.discountPrice = {
-      ...(minPrice && { gte: Number(minPrice) }),
-      ...(maxPrice && { lte: Number(maxPrice) }),
-    };
+  const parsedMinSize = minSize !== undefined ? Number(minSize) : undefined;
+  const parsedMaxSize = maxSize !== undefined ? Number(maxSize) : undefined;
+
+  // NaN protection
+  if (Number.isNaN(parsedMinSize) || Number.isNaN(parsedMaxSize)) {
+    throw new BadRequestException('Size should be valid.');
   }
 
   // Size filter
-  if (minSize || maxSize) {
+  if (parsedMinSize !== undefined || parsedMaxSize !== undefined) {
     whereCondition.size = {
-      ...(minSize && { gte: Number(minSize) }),
-      ...(maxSize && { lte: Number(maxSize) }),
+      gte: parsedMinSize,
+      lte: parsedMaxSize,
+    };
+  }
+
+  const parsedMinPrice = minPrice !== undefined ? Number(minPrice) : undefined;
+  const parsedMaxPrice = maxPrice !== undefined ? Number(maxPrice) : undefined;
+
+  if (Number.isNaN(parsedMinPrice) || Number.isNaN(parsedMaxPrice)) {
+    throw new BadRequestException('Price should be valid');
+  }
+
+  if (parsedMinPrice !== undefined || parsedMaxPrice !== undefined) {
+    whereCondition.priceUsd = {
+      gte: parsedMinPrice,
+      lte: parsedMaxPrice,
     };
   }
 
   // Rooms quantity filter
-  if (rooms) {
+  if (rooms !== undefined) {
     whereCondition.rooms = Number(rooms);
   }
 

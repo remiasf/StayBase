@@ -25,7 +25,7 @@ export class ApartmentsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.LANDLORD)
   @Post()
-  create(@CurrentUserID() userId: string, @Body()  createApartmentDto: CreateApartmentDto) {
+  create(@CurrentUserID() userId: string, @Query()  createApartmentDto: CreateApartmentDto) {
     return this.apartmentsService.create(userId, createApartmentDto);
   }
 
