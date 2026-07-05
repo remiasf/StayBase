@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Res } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Post, Res } from '@nestjs/common';
 import { Response } from 'express';
 import { register } from 'node:module';
 import { AuthService } from './auth.service';
@@ -9,19 +9,45 @@ import { join } from 'node:path';
 @Controller('auth')
 export class AuthController {
     constructor(private readonly authService: AuthService){}
-    @Get('register')
-    showRegisterPage(@Res() res: Response) {
-        return res.sendFile(join(__dirname, '..', '..', 'public', 'register.html'));
-    }
     
     @Post('register')
-    register(@Body() dto: RegisterDto) {
-        return this.authService.register(dto);
+    @HttpCode(HttpStatus.OK)
+    async register(
+        @Body() dto: RegisterDto,
+        @Res({ passthrough: true }) res: Response
+    ) {
+        const result = await this.authService.register(dto);
+
+        res.cookie('access_token', result.access_token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 1000 * 60 * 60 * 24 * 2,
+        })
+        
+        return {
+            message: 'Successful registration'
+        }
     }
 
     @Post('login')
-    login(@Body() dto: LoginDto) {
-        return this.authService.login(dto);
+    @HttpCode(HttpStatus.OK)
+    async login(
+        @Body() dto: LoginDto,
+        @Res({ passthrough: true }) res: Response
+    ) {
+        const result = await this.authService.login(dto);
+        
+        res.cookie('access_token', result.access_token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 1000 * 60 * 60 * 24 * 2,
+        });
+
+        return {
+            message: 'Successful authentication'
+        }
     }
 }
 
