@@ -26,7 +26,7 @@ export class MapboxService {
       const context = features[0].properties.context;
       const city = context?.place?.name || context?.region?.name || context?.country?.name || 'Unknown Location';
       const fullAddress = features[0].properties.full_address || features[0].properties.place_formatted || address;
-
+      
       return { latitude, longitude, city, address: fullAddress };
       
     } catch (error: unknown) {
