@@ -12,6 +12,7 @@ import { Roles } from 'src/common/decorators/roles.decorator';
 import { Role } from '@prisma/client';
 import { IsApartmentOwnerGuard } from 'src/common/guards/apartmentOwnerCheck.guard';
 import { CurrentUserID } from 'src/common/decorators/currentUserID.decorator';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { ApiBearerAuth, ApiOperation, ApiProperty } from '@nestjs/swagger';
 
 @Controller('apartments')
@@ -61,6 +62,20 @@ export class ApartmentsController {
   findAll(@Query() filterDto: FilterApartmentDto) {
     const pageNumber = Number(filterDto.page) || 1;
     return this.apartmentsService.findAll(filterDto, pageNumber);
+  }
+
+  @ApiOperation({
+    summary: 'Get apartments created by the current landlord (pagination)'
+  })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.LANDLORD)
+  @Get('me')
+  findMyApartments(
+    @CurrentUserID() userId: string,
+    @Query() dto: PaginationDto,
+  ) {
+    return this.apartmentsService.findMyApartments(userId, dto);
   }
 
   @ApiOperation({

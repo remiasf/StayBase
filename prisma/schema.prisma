@@ -122,3 +122,25 @@ model Payment {
   updatedAt         DateTime      @updatedAt
 }
 
+model Chat {
+  id          String    @id @default(uuid())
+  propertyId  String
+  clientId    String
+  realtorId   String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  messages    Message[]
+
+  @@unique([propertyId, clientId, realtorId])
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  chatId    String
+  chat      Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  senderId  String
+  text      String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}

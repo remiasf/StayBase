@@ -7,6 +7,7 @@ import { MapboxService } from '../mapbox/mapbox.service';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { AiService } from '../ai/ai.service';
 import { CurrencyConversion } from '../currency-conversion/currency-conversion.service';
+import { PaginationDto } from '../common/dto/pagination.dto';
 import { Prisma } from '@prisma/client';
 
 @Injectable()
@@ -234,6 +235,34 @@ export class ApartmentsService {
     },
   };
 }
+
+  async findMyApartments(userId: string, dto: PaginationDto) {
+    const { limit = 10, page = 1 } = dto;
+    const safeLimit = Math.min(limit, 100);
+    const skip = (page - 1) * safeLimit;
+
+    const whereCondition = { userId };
+
+    const [apartments, total] = await Promise.all([
+      this.prisma.apartment.findMany({
+        where: whereCondition,
+        take: safeLimit,
+        skip,
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.apartment.count({ where: whereCondition }),
+    ]);
+
+    return {
+      data: apartments,
+      meta: {
+        total,
+        page,
+        limit: safeLimit,
+        totalPages: Math.ceil(total / safeLimit),
+      },
+    };
+  }
 
   async findOne(id: string) {
     const apartment = await this.prisma.apartment.findUnique({

@@ -41,7 +41,7 @@ export class LiqPayService {
             }
         })
 
-        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
 
         const dynamicResultUrl = `${frontendUrl}/bookings/${bookingId}`
 
