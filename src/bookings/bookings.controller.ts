@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, ParseIntPipe, Query, ParseUUIDPipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, UseGuards, Query, ParseUUIDPipe } from '@nestjs/common';
 import { BookingsService } from './bookings.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { CurrentUserID } from 'src/common/decorators/currentUserID.decorator';
@@ -14,7 +14,9 @@ import { ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 export class BookingsController {
   constructor(private readonly bookingsService: BookingsService) {}
   @ApiOperation({
-    summary: 'Create booking'
+    summary: 'Create booking',
+    description:
+      'Creates a booking and snapshots apartment fields (title, address, images, pricing, etc.) for a stable frontend payload.',
   })
   @ApiBearerAuth()
   @Post('book')
@@ -23,7 +25,9 @@ export class BookingsController {
   }
 
   @ApiOperation({
-    summary: 'Get all my bookings (pagination)'
+    summary: 'Get all my bookings (pagination)',
+    description:
+      'Returns enriched booking cards: snapshot apartment data, prices, nights, and landlord preview.',
   })
   @ApiBearerAuth()
   @Get('me')
@@ -32,18 +36,37 @@ export class BookingsController {
   }
 
   @ApiOperation({
-    summary: 'Landlords rent requests (paginations)'
+    summary: 'Landlords rent requests (pagination)',
+    description:
+      'Returns enriched booking requests with snapshot property data and guest contact preview.',
   })
   @ApiBearerAuth()
   @Get('requests')
   @UseGuards(RolesGuard)
   @Roles(Role.LANDLORD)
-  landlordRequests(@CurrentUserID() landlordId: string, @Query() dto: FilterBookingDto){
+  landlordRequests(@CurrentUserID() landlordId: string, @Query() dto: FilterBookingDto) {
     return this.bookingsService.landlordRequests(landlordId, dto);
   }
 
   @ApiOperation({
-    summary: 'Single booking info (for simple users)'
+    summary: 'Single booking info (for landlords)',
+    description: 'Full booking detail with apartment snapshot and guest info.',
+  })
+  @ApiBearerAuth()
+  @Get(':id/landlord')
+  @UseGuards(RolesGuard)
+  @Roles(Role.LANDLORD)
+  landlordBookingInfo(
+    @Param('id', ParseUUIDPipe) bookingId: string,
+    @CurrentUserID() landlordId: string,
+  ) {
+    return this.bookingsService.landlordBookingInfo(bookingId, landlordId);
+  }
+
+  @ApiOperation({
+    summary: 'Single booking info (for simple users)',
+    description:
+      'Full booking detail with apartment snapshot (location, images, rooms) and landlord contact.',
   })
   @ApiBearerAuth()
   @Get(':id')
@@ -52,18 +75,7 @@ export class BookingsController {
   }
 
   @ApiOperation({
-    summary: 'Single booking info (for landlords)'
-  })
-  @ApiBearerAuth()
-  @Get(':id/landlord')
-  @UseGuards(RolesGuard)
-  @Roles(Role.LANDLORD)
-  landlordBookingInfo(@Param('id', ParseUUIDPipe) bookingId: string, @CurrentUserID() landlordId: string) {
-    return this.bookingsService.landlordBookingInfo(bookingId, landlordId);
-  }
-
-  @ApiOperation({
-    summary: 'Booking cancel (for users)'
+    summary: 'Booking cancel (for users)',
   })
   @ApiBearerAuth()
   @Patch(':id/cancel')
@@ -72,24 +84,30 @@ export class BookingsController {
   }
 
   @ApiOperation({
-    summary: 'Booking reject (for landlords)'
+    summary: 'Booking reject (for landlords)',
   })
   @ApiBearerAuth()
   @Patch(':id/reject')
   @UseGuards(RolesGuard)
   @Roles(Role.LANDLORD)
-  landlordRejectBooking(@Param('id', ParseUUIDPipe) bookingId: string, @CurrentUserID() landlordId: string) {
+  landlordRejectBooking(
+    @Param('id', ParseUUIDPipe) bookingId: string,
+    @CurrentUserID() landlordId: string,
+  ) {
     return this.bookingsService.landlordRejectBooking(bookingId, landlordId);
   }
 
   @ApiOperation({
-    summary: 'Booking approving (for landlords)'
+    summary: 'Booking approving (for landlords)',
   })
   @ApiBearerAuth()
   @Patch(':id/approve')
   @UseGuards(RolesGuard)
   @Roles(Role.LANDLORD)
-  landlordApproveBooking(@Param('id', ParseUUIDPipe) bookingId: string, @CurrentUserID() landlordId: string) {
+  landlordApproveBooking(
+    @Param('id', ParseUUIDPipe) bookingId: string,
+    @CurrentUserID() landlordId: string,
+  ) {
     return this.bookingsService.landlordApproveBooking(bookingId, landlordId);
   }
 }

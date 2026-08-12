@@ -82,26 +82,39 @@ model Amenity {
 
 model Booking {
   id String @id @default(uuid())
-  
-  currency String
-  localPrice Int
-  discountPercent Int
-  dailyPrice Int
-  totalPrice Int
 
-  status BookingStatus @default(PENDING)
+  // Snapshot of apartment data at booking time (frontend-friendly, immutable history)
+  title       String
+  description String
+  images      String[] @default([])
+  city        String
+  address     String
+  latitude    Float
+  longitude   Float
+  size        Float
+  rooms       Int
+  maxGuests   Int
+
+  currency        String
+  localPrice      Int
+  discountPercent Int
+  dailyPrice      Int
+  totalPrice      Int
+  nights          Int
+
+  status   BookingStatus @default(PENDING)
   payments Payment[]
 
   userId String
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   startDate DateTime
-  endDate DateTime
+  endDate   DateTime
   updatedAt DateTime @updatedAt
-  
+
   apartmentId String
-  apartment Apartment @relation(fields: [apartmentId], references: [id], onDelete: Cascade)
+  apartment   Apartment @relation(fields: [apartmentId], references: [id], onDelete: Cascade)
 }
 
 model Payment {
