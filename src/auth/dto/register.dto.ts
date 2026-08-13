@@ -45,7 +45,6 @@ export class RegisterDto {
     })
     @IsString()
     @IsOptional()
-    @MinLength(20, {message: 'Bio minimum length is 20 characters'})
     @MaxLength(200, {message: 'Bio can`t be more than 200 characters'})
     bio?: string;
 
