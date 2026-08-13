@@ -13,7 +13,7 @@ export class LiqPayService {
     async generatePaymentParams(bookingId: string){
         const bookingInfo = await this.prisma.booking.findUnique({
             where: {id: bookingId},
-            select: {totalPrice: true, status: true, discountPercent: true}
+            select: {totalPrice: true, status: true}
         });
 
         if(!bookingInfo){
@@ -31,13 +31,12 @@ export class LiqPayService {
                 break;
         }
 
-        const discount = bookingInfo.discountPercent || 0;
-        const finalAmount = Math.round(bookingInfo.totalPrice * (1 - discount / 100) * 100) / 100;
+        const amount = bookingInfo.totalPrice;
 
         const newPayment = await this.prisma.payment.create({
             data:{
                 bookingId: bookingId,
-                amount: finalAmount
+                amount
             }
         })
 
@@ -49,7 +48,7 @@ export class LiqPayService {
             public_key: this.publicKey,
             version: 3,
             action: 'pay',
-            amount: finalAmount,
+            amount,
             currency: 'USD',
             description: `Apartment payment (Booking #${bookingId})`,
             order_id: newPayment.id,

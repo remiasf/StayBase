@@ -130,8 +130,13 @@ export class BookingsService {
           throw new ConflictException('The apartment is already booked for these dates');
         }
 
-        const dailyPrice = apartment.priceUsd ?? apartment.price;
         const discountPercent = apartment.discountPercent ?? 0;
+        const { localPrice, dailyPrice, totalPrice } = this.applyBookingDiscount({
+          localPrice: apartment.price,
+          dailyPrice: apartment.priceUsd ?? apartment.price,
+          nights,
+          discountPercent,
+        });
 
         const newRecord = await tx.booking.create({
           data: {
@@ -149,12 +154,12 @@ export class BookingsService {
             size: apartment.size,
             rooms: apartment.rooms,
             maxGuests: apartment.maxGuests,
-            localPrice: apartment.price,
+            localPrice,
             currency: apartment.currency,
             discountPercent,
             dailyPrice,
             nights,
-            totalPrice: dailyPrice * nights,
+            totalPrice,
           },
           select: bookingDetailSelect,
         });
@@ -386,5 +391,27 @@ export class BookingsService {
       }
       throw error;
     }
+  }
+
+  private applyBookingDiscount(params: {
+    localPrice: number;
+    dailyPrice: number;
+    nights: number;
+    discountPercent: number;
+  }) {
+    const { localPrice, dailyPrice, nights, discountPercent } = params;
+    const totalPrice = dailyPrice * nights;
+
+    if (discountPercent <= 0) {
+      return { localPrice, dailyPrice, totalPrice };
+    }
+
+    const multiplier = 1 - discountPercent / 100;
+
+    return {
+      localPrice: Math.round(localPrice * multiplier),
+      dailyPrice: Math.round(dailyPrice * multiplier),
+      totalPrice: Math.round(totalPrice * multiplier),
+    };
   }
 }
