@@ -275,6 +275,48 @@ export class ApartmentsService {
     return apartment;
   }
 
+  async checkAvailability(id: string) {
+    const apartment = await this.prisma.apartment.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+
+    if (!apartment) {
+      throw new NotFoundException(`Apartment with ID ${id} not found, sorry!`);
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const bookings = await this.prisma.booking.findMany({
+      where: {
+        apartmentId: id,
+        status: { not: 'CANCELLED' },
+        endDate: { gt: today },
+      },
+      select: {
+        startDate: true,
+        endDate: true,
+      },
+      orderBy: { startDate: 'asc' },
+    });
+
+    return {
+      apartmentId: id,
+      unavailable: bookings.map((booking) => ({
+        startDate: this.formatDateOnly(booking.startDate),
+        endDate: this.formatDateOnly(booking.endDate),
+      })),
+    };
+  }
+
+  private formatDateOnly(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
   async update(id: string, dto: UpdateApartmentDto) {
     const existingApartment = await this.prisma.apartment.findUnique({
       where:{ id }

@@ -79,6 +79,16 @@ export class ApartmentsController {
   }
 
   @ApiOperation({
+    summary: 'Get booked dates for apartment availability calendar',
+    description:
+      'Returns non-cancelled bookings as check-in/check-out ranges (YYYY-MM-DD). Checkout day (endDate) is available for a new stay.',
+  })
+  @Get(':id/availability')
+  checkAvailability(@Param('id') id: string) {
+    return this.apartmentsService.checkAvailability(id);
+  }
+
+  @ApiOperation({
     summary: 'Get a single apartment by ID'
   })
   @Get(':id')
