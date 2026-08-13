@@ -13,6 +13,7 @@
   import { AiModule } from './ai/ai.module';
   import { MapboxModule } from './mapbox/mapbox.module';
   import { CurrencyConversionModule } from './currency-conversion/currency-conversion.module';
+  import { ChatModule } from './chat/chat.module';
 
   @Module({
     imports: [
@@ -30,7 +31,8 @@
       PaymentsModule,
       AiModule,
       MapboxModule,
-      CurrencyConversionModule
+      CurrencyConversionModule,
+      ChatModule
     ],
     controllers: [AppController],
     providers: [AppService],

@@ -12,8 +12,8 @@ async function bootstrap() {
   const { httpAdapter } = app.get(HttpAdapterHost);
   app.enableCors({
     origin: [
-      'http://localhost:3000',
-      'http://127.0.0.1:3000',
+      'http://localhost:3001',
+      'http://127.0.0.1:3001',
       'https://staybase.software',
       'https://stay-base-frontend.vercel.app'
     ],
