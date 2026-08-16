@@ -85,6 +85,9 @@ model AiReview {
   questionsForLandlord String[]
   summary              String
 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   apartmentId String @unique
   apartment Apartment @relation(fields: [apartmentId], references: [id], onDelete: Cascade)
 }

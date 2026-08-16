@@ -1,10 +1,9 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards, UseInterceptors, UploadedFiles, UploadedFile, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards, UseInterceptors, UploadedFiles, UploadedFile, BadRequestException, Res, HttpStatus } from '@nestjs/common';
 import { ApartmentsService } from './apartments.service';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import 'multer';
 import { CreateApartmentDto } from './dto/create-apartment.dto';
 import { UpdateApartmentDto } from './dto/update-apartment.dto';
-import { DiscountApartmentDto } from './dto/discount-apartment.dto';
 import { FilterApartmentDto } from './dto/filter-apartment.dto';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guards';
 import { RolesGuard } from 'src/common/guards/roles.guard';
@@ -14,6 +13,7 @@ import { IsApartmentOwnerGuard } from 'src/common/guards/apartmentOwnerCheck.gua
 import { CurrentUserID } from 'src/common/decorators/currentUserID.decorator';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { ApiBearerAuth, ApiOperation, ApiProperty } from '@nestjs/swagger';
+import { Response } from 'express';
 
 @Controller('apartments')
 export class ApartmentsController {
@@ -122,9 +122,29 @@ export class ApartmentsController {
     summary: 'Get an AI consultation about apartment'
   })
   @ApiBearerAuth()
+  @UseGuards( RolesGuard)
+  @Get(':id/ai-review')
+  async getAiReview(
+    @Param('id') id: string,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const review = await this.apartmentsService.getAiReview(id);
+
+    if ( review === null ) {
+      res.status(HttpStatus.NO_CONTENT);
+      return;
+    }
+
+    return review;
+  }
+
+  @ApiOperation({
+    summary: 'Create an AI consultation about apartment'
+  })
+  @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Post(':id/ai-review')
-  aiReview(@Param('id') id: string) {
-    return this.apartmentsService.aiReview(id);
+  createAiReview(@Param('id') id: string) {
+    return this.apartmentsService.createAiReview(id);
   }
 }

@@ -369,7 +369,19 @@ export class ApartmentsService {
     return apartment;
   }
 
-  async aiReview(id: string) {
+  async getAiReview(id: string) {
+    const aiReview = await this.prisma.aiReview.findUnique({
+      where: { apartmentId: id }
+    });
+
+    if( !aiReview ) {
+      return null;
+    }
+
+    return aiReview;
+  }
+  
+  async createAiReview(id: string) {
     const apartment = await this.prisma.apartment.findUnique({
       where: { id },
       include: {
