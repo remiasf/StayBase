@@ -67,7 +67,7 @@ export class AiService {
             CRITICAL: You are speaking DIRECTLY to the potential tenant (e.g., "This looks like a solid option, but be careful with...").
             CRITICAL: Answer on ENGLISH.
             CRITICAL: The price is set in local currency (e.g., "USA: USD, Ukraine: UAH, Germany: EUR")
-            CRITICAL: The price is set for a single night (24)
+            CRITICAL: The price is set for a single night (24 hours)
 
             Apartment data to analyze:
             ${stringifiedObject}

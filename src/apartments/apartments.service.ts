@@ -319,19 +319,19 @@ export class ApartmentsService {
 
   async update(id: string, dto: UpdateApartmentDto) {
     const existingApartment = await this.prisma.apartment.findUnique({
-      where:{ id }
+      where: { id }
     });
 
-    if( !existingApartment ){
+    if (!existingApartment) {
       throw new NotFoundException('Apartment not found');
     }
 
-    const dataToUpdate: Prisma.ApartmentUpdateInput = {...dto};
-    
-    if( dto.address ){
+    const dataToUpdate: Prisma.ApartmentUpdateInput = { ...dto };
+
+    if (dto.address) {
       const addressInfo = await this.mapboxService.getCoordinates(dto.address);
 
-      if( !addressInfo ){
+      if (!addressInfo) {
         throw new BadRequestException('Invalid address provided. Cannot find coordinates.');
       }
 
@@ -340,21 +340,23 @@ export class ApartmentsService {
       dataToUpdate.longitude = longitude;
       dataToUpdate.city = city;
       dataToUpdate.address = address;
-  }
+    }
 
-    if( dto.price !== undefined || dto.currency !== undefined){
+    if (dto.price !== undefined || dto.currency !== undefined) {
       const priceToConvert = dto.price ?? existingApartment.price;
       const currencyToConvert = dto.currency ?? existingApartment.currency;
-      
-      const {amountInUsd, currencyCode} = await this.currencyConversion.convertToUsd(priceToConvert, currencyToConvert);
+
+      const { amountInUsd, currencyCode } = await this.currencyConversion.convertToUsd(priceToConvert, currencyToConvert);
       dataToUpdate.priceUsd = amountInUsd;
       dataToUpdate.currency = currencyCode;
     }
-  
-    return this.prisma.apartment.update({
-      where: { id },
-      data: dataToUpdate
-    });
+
+    const [, updatedApartment] = await this.prisma.$transaction([
+      this.prisma.aiReview.deleteMany({ where: { apartmentId: id } }),
+      this.prisma.apartment.update({ where: { id }, data: dataToUpdate }),
+    ]);
+
+    return updatedApartment;
   }
 
   async remove(id: string) {
@@ -368,11 +370,36 @@ export class ApartmentsService {
   }
 
   async aiReview(id: string) {
-    const apartment = await this.findOne(id);
+    const apartment = await this.prisma.apartment.findUnique({
+      where: { id },
+      include: {
+        aiReview: true,
+      }
+    });
+    
 
-    const aiReviewedData = await this.aiService.analyzePropertyDescription(apartment);
-    return {
-      aiReviewedData
+    if( !apartment ) {
+      throw new NotFoundException(`Apartment with ID ${id} not found, sorry!`);
     }
+
+    if( apartment.aiReview ) {
+      return apartment.aiReview;
+    }
+
+    const { aiReview, userId, ...apartmentData } = apartment;
+    const generated = await this.aiService.analyzePropertyDescription(apartmentData);
+
+    return await this.prisma.aiReview.create({
+      data:{
+        rating: generated.rating,
+        priceFairness: generated.priceFairness,
+        pros: generated.pros,
+        consAndRisks: generated.consAndRisks,
+        questionsForLandlord: generated.questionsForLandlord,
+        summary: generated.summary,
+        apartmentId: id,
+      },
+    });
+    
   }
 }

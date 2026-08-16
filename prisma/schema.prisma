@@ -72,6 +72,21 @@ model Apartment {
   bookings Booking[]
 
   amenities Amenity[]
+
+  aiReview AiReview?
+}
+
+model AiReview {
+  id                   String @id @default(uuid())
+  rating               Float
+  priceFairness        String
+  pros                 String[]
+  consAndRisks         String[]
+  questionsForLandlord String[]
+  summary              String
+
+  apartmentId String @unique
+  apartment Apartment @relation(fields: [apartmentId], references: [id], onDelete: Cascade)
 }
 
 model Amenity {
