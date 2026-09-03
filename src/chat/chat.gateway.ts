@@ -4,20 +4,26 @@ import {
   SubscribeMessage,
   MessageBody,
   ConnectedSocket,
-  WsException,
+  OnGatewayConnection,
 } from '@nestjs/websockets';
-import { UseGuards } from '@nestjs/common';
+import { UseGuards, UsePipes } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { Server, Socket } from 'socket.io';
-import { ChatService } from './chat.service';
+import {
+  ChatListItem,
+  ChatMessage,
+  ChatService,
+  ChatWithMessages,
+} from './chat.service';
 import { WsJwtGuard } from '../common/guards/ws-jwt.guard';
-
-type JwtSocketUser = {
-  id: string;
-  login: string;
-  role: string;
-};
+import { WsValidationPipe } from '../common/pipes/ws-validation.pipe';
+import { authenticateSocket, getSocketUser } from '../common/auth/socket-auth';
+import { GetOrCreateChatDto } from './dto/get-or-create-chat.dto';
+import { JoinChatDto } from './dto/join-chat.dto';
+import { SendMessageDto } from './dto/send-message.dto';
 
 @UseGuards(WsJwtGuard)
+@UsePipes(new WsValidationPipe())
 @WebSocketGateway({
   namespace: 'chat',
   cors: {
@@ -30,68 +36,81 @@ type JwtSocketUser = {
     credentials: true,
   },
 })
-export class ChatGateway {
+export class ChatGateway implements OnGatewayConnection {
   @WebSocketServer()
   server: Server;
 
-  constructor(private readonly chatService: ChatService) {}
+  constructor(
+    private readonly chatService: ChatService,
+    private readonly jwtService: JwtService,
+  ) {}
+
+  async handleConnection(client: Socket) {
+    try {
+      await authenticateSocket(this.jwtService, client);
+    } catch {
+      client.emit('exception', { message: 'User not authorized' });
+      client.disconnect(true);
+    }
+  }
 
   @SubscribeMessage('getOrCreateChat')
   async handleGetOrCreateChat(
-    @MessageBody()
-    data: { propertyId: string; clientId: string; realtorId: string },
+    @MessageBody() dto: GetOrCreateChatDto,
     @ConnectedSocket() client: Socket,
-  ) {
-    const currentUser = this.getCurrentUser(client);
+  ): Promise<ChatWithMessages> {
+    const user = getSocketUser(client);
 
-    const chat = await this.chatService.getOrCreateChat(
-      data.propertyId,
-      data.clientId,
-      data.realtorId,
-      currentUser.id,
-    );
-
-    client.join(`chat_${chat.id}`);
-    client.emit('chatReady', chat);
+    const chat = await this.chatService.getOrCreateChat(dto.propertyId, user.id);
+    await client.join(this.roomOf(chat.id));
 
     return chat;
   }
 
   @SubscribeMessage('joinChat')
-  async handleJoinRoom(
-    @MessageBody() data: { chatId: string },
+  async handleJoinChat(
+    @MessageBody() dto: JoinChatDto,
     @ConnectedSocket() client: Socket,
-  ) {
-    const currentUser = this.getCurrentUser(client);
-    await this.chatService.assertChatParticipant(data.chatId, currentUser.id);
+  ): Promise<ChatWithMessages> {
+    const user = getSocketUser(client);
 
-    client.join(`chat_${data.chatId}`);
+    const chat = await this.chatService.getChatForParticipant(
+      dto.chatId,
+      user.id,
+    );
+    await client.join(this.roomOf(chat.id));
+
+    return chat;
+  }
+
+  @SubscribeMessage('getMyChats')
+  async handleGetMyChats(
+    @ConnectedSocket() client: Socket,
+  ): Promise<ChatListItem[]> {
+    const user = getSocketUser(client);
+
+    return this.chatService.getMyChats(user.id);
   }
 
   @SubscribeMessage('sendMessage')
   async handleSendMessage(
-    @MessageBody() data: { chatId: string; text: string },
+    @MessageBody() dto: SendMessageDto,
     @ConnectedSocket() client: Socket,
-  ) {
-    const currentUser = this.getCurrentUser(client);
+  ): Promise<ChatMessage> {
+    const user = getSocketUser(client);
 
     const message = await this.chatService.createMessage(
-      data.chatId,
-      currentUser.id,
-      data.text,
+      dto.chatId,
+      user.id,
+      dto.text,
     );
 
-    this.server.to(`chat_${data.chatId}`).emit('newMessage', message);
+    this.server.to(this.roomOf(dto.chatId)).emit('newMessage', message);
+
     return message;
   }
 
-  private getCurrentUser(client: Socket): JwtSocketUser {
-    const user = client.data.user as JwtSocketUser | undefined;
-
-    if (!user?.id) {
-      throw new WsException('User not authorized');
-    }
-
-    return user;
+  private roomOf(chatId: string): string {
+    return `chat_${chatId}`;
   }
 }

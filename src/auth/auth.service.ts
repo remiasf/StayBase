@@ -4,6 +4,7 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
+import { JwtPayload } from 'src/common/auth/jwt-user';
 
 @Injectable()
 export class AuthService {
@@ -40,9 +41,11 @@ export class AuthService {
             }
         });
 
-        const { id, login, role } = newUser;
-
-        const payload = { id, login, role};
+        const payload: JwtPayload = {
+            sub: newUser.id,
+            login: newUser.login,
+            role: newUser.role
+        };
         
         return {
             access_token: await this.jwtService.signAsync(payload)
@@ -62,8 +65,8 @@ export class AuthService {
             throw new UnauthorizedException('Invalid user data');
         }
 
-        const payload = {
-            id: existingUser.id,
+        const payload: JwtPayload = {
+            sub: existingUser.id,
             login: existingUser.login,
             role: existingUser.role
         }

@@ -18,13 +18,14 @@ export class AuthController {
 
         res.cookie('access_token', result.access_token, {
             httpOnly: true,
-            secure: false,
-            sameSite: 'lax',
+            secure: true,
+            sameSite: 'none',
             maxAge: 1000 * 60 * 60 * 24 * 2,
         })
         
         return {
-            message: 'Successful registration'
+            message: 'Successful registration',
+            access_token: result.access_token
         }
     }
 
@@ -38,13 +39,14 @@ export class AuthController {
         
         res.cookie('access_token', result.access_token, {
             httpOnly: true,
-            secure: false,
-            sameSite: 'lax',
+            secure: true,
+            sameSite: 'none',
             maxAge: 1000 * 60 * 60 * 24 * 2,
         });
 
         return {
-            message: 'Successful authentication'
+            message: 'Successful authentication',
+            access_token: result.access_token
         }
     }
 
@@ -53,8 +55,8 @@ export class AuthController {
     logout(@Res({ passthrough: true }) res: Response) {
         res.clearCookie('access_token', {
             httpOnly: true,
-            secure: false,
-            sameSite: 'lax',
+            secure: true,
+            sameSite: 'none',
         });
 
         return {
