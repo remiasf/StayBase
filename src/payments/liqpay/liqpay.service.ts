@@ -27,6 +27,8 @@ export class LiqPayService {
                 throw new ForbiddenException('Booking is canceled');
             case 'COMPLETED':
                 throw new ConflictException('Booking is completed');
+            case 'PAID':
+                throw new ConflictException('Booking is already paid');
             default:
                 break;
         }
@@ -112,7 +114,7 @@ export class LiqPayService {
 
                 await this.prisma.booking.update({
                     where: {id: updatedPayment.bookingId},
-                    data: { status: 'COMPLETED' }
+                    data: { status: 'PAID' }
                 })
             }catch(error){
                 console.error('Webhook DB Error:', error);
